@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AspNetCoreTodoApp.Models;
@@ -19,11 +17,10 @@ namespace AspNetCoreTodoApp.Controllers
         {
             _context = context;
 
-            if (_context.Todos.Count() == 0)
-            {
-                _context.Todos.Add(new Todo { Name = "Todo1" });
-                _context.SaveChanges();
-            }
+            if (_context.Todos.Any()) return;
+
+            _context.Todos.Add(new Todo {Name = "Todo1"});
+            _context.SaveChanges();
         }
 
         // GET: api/todos
@@ -37,34 +34,34 @@ namespace AspNetCoreTodoApp.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTodo([FromRoute] long id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var todo = await _context.Todos.SingleOrDefaultAsync(m => m.Id == id);
 
-            if (todo == null)
-            {
-                return NotFound();
-            }
+            if (todo == null) return NotFound();
 
             return Ok(todo);
+        }
+        
+        // POST: api/todos
+        [HttpPost]
+        public async Task<IActionResult> PostTodo([FromBody] Todo todo)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            _context.Todos.Add(todo);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetTodo", new {id = todo.Id}, todo);
         }
 
         // PUT: api/todos/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTodo([FromRoute] long id, [FromBody] Todo todo)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if (id != todo.Id)
-            {
-                return BadRequest();
-            }
+            if (id != todo.Id) return BadRequest();
 
             _context.Entry(todo).State = EntityState.Modified;
 
@@ -74,48 +71,23 @@ namespace AspNetCoreTodoApp.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!TodoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                if (!TodoExists(id)) return NotFound();
+
+                throw;
             }
 
             return Ok(todo);
-        }
-
-        // POST: api/todos
-        [HttpPost]
-        public async Task<IActionResult> PostTodo([FromBody] Todo todo)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.Todos.Add(todo);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetTodo", new { id = todo.Id }, todo);
         }
 
         // DELETE: api/todos/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodo([FromRoute] long id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var todo = await _context.Todos.SingleOrDefaultAsync(m => m.Id == id);
-            if (todo == null)
-            {
-                return NotFound();
-            }
+
+            if (todo == null) return NotFound();
 
             _context.Todos.Remove(todo);
             await _context.SaveChangesAsync();
